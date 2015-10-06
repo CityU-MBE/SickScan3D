@@ -1,0 +1,34 @@
+<launch>
+
+  <node pkg="sicktoolbox_wrapper" type="sicklms" output="screen" name="sicklms1">
+    <param name="port" value="/dev/ttyUSB1" />
+    <param name="baud" value="38400" />
+    <param name="frame_id" value="laser" />
+    <param name="inverted" value="false" />
+    <param name="time_offset" value="-0.27" />
+  </node>
+
+  <node pkg="sickscan3d" type="motorcontrol" output="screen" name="motorcontrol">
+    <param name="port" value="/dev/ttyUSB0" />
+    <param name="profvelocity" value="5" />
+    <param name="profacceleration" value="250" />
+    <param name="profdeceleration" value="250" />
+    <param name="rotationpos" value="2400" />
+    <param name="kalmanfilterstep" value="0.0001" />
+    <param name="motionmodelnoise" value="0.05" />
+    <param name="measurenoise" value="2.0" />
+  </node>
+
+  <node pkg="sickscan3d" type="scan3d" output="screen"  name="scan3d">
+    <remap from="scan" to="scan"/>
+    <param name="tf_cache_time_secs" type="double" value="10.0" />
+    <param name="max_scans" type="int" value="400" />
+    <param name="ignore_laser_skew" type="bool" value="false" />
+    <param name="fixed_frame" type="string" value="world" />
+  </node>
+
+  <node pkg="sickscan3d" type="merge_cloud" output="screen"  name="merge_cloud" />
+
+</launch>
+
+
