@@ -118,16 +118,16 @@ extern std::string port;
 extern DWORD E_error; 
 
 /*!motor control parameters define */
-extern int MaxProfVelocity; ///permitted maximum profile velocity
-extern int ProfVelocity; ///profile velocity
-extern int ProfAcceleration; ///profile acceleration
-extern int ProfDeceleration; ///profile deceleration
+extern int MaxProfVelocity; 	// permitted maximum profile velocity
+extern int ProfVelocity;     	// profile velocity
+extern int ProfAcceleration; 	// profile acceleration
+extern int ProfDeceleration; 	// profile deceleration
 
 
 /* all high-level functions return <0 in case of error */
 
 /*! open the connection to EPOS */
-int openEPOS(char *device);
+int openEPOS(const char *device);
 /*! open the connection to EPOS via RS232-over-TCP/IP (LSW special) */
 int openTCPEPOS(char *ip, short unsigned port);
 /*! close the connection to EPOS */

@@ -141,7 +141,7 @@ to, e.g. "/dev/ttyS0"
 \retval -1 failure
 
 */
-int openEPOS(char *dev) 
+int openEPOS(const char *dev) 
 {
     struct termios options;
     int i;

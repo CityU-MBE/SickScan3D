@@ -35,7 +35,7 @@ It publishs a merged pointcloud topic:`cloud_out`--accumulated point clouds.
 
 2.	The control of the EPOS motor driver is based on an open source library ("epos.cpp") which controls the motor driver through RS232 serial communication.  
 
-3.	The EPOS driver works at the "Profile Position Mode". The detail description can be found in the file "EPOS-Application-Note-Device-Programming-En.pdf". Before running the sickscan3d rospackage, the parameters for the "Profile Position Mode" can be adjusted using the official EPOS installation and configuration software for Windows. The tutorial can be found in the file "300583_Getting_Started_En.pdf".  
+3.	The EPOS driver works at the "Profile Position Mode". The detail description can be found in the file *"EPOS-Application-Note-Device-Programming-En.pdf"*. Before running the sickscan3d rospackage, the parameters for the "Profile Position Mode" can be adjusted using the official EPOS installation and configuration software for Windows. The tutorial can be found in the file *"300583_Getting_Started_En.pdf"*.  
 
 4.	The parameters for EKF are still very rough, more work is necessary to optimize the motor angle estimation, which is quite important for 3D sensing with a higher rotation velocity.  
 

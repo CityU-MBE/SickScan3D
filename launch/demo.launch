@@ -10,9 +10,9 @@
 
   <node pkg="sickscan3d" type="motorcontrol" output="screen" name="motorcontrol">
     <param name="port" type="string" value="/dev/ttyUSB0" />
-    <param name="profvelocity" type="double" value="5" />
-    <param name="profacceleration" type="double" value="250" />
-    <param name="profdeceleration" type="double" value="250" />
+    <param name="profvelocity" type="double" value="70" />
+    <param name="profacceleration" type="double" value="600" />
+    <param name="profdeceleration" type="double" value="600" />
     <param name="rotationpos" type="int" value="2400" />
     <param name="kalmanfilterstep" type="double" value="0.0001" />
     <param name="motionmodelnoise" type="double" value="0.04" />
