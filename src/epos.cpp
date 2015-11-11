@@ -1,5 +1,4 @@
 /*! \file epos.cpp
-
 \brief libEPOS - a library to control an EPOS 70/10
 
 */
@@ -44,6 +43,7 @@ NOT work with other EPOS variants.
 /*! starting point for (slow!) homing movement. If the zero point is
   not off too far, this will speed things up enormously!
 */
+
 #define E_STARTPOS_HOMING -200000 
 
 /*i RS232 Parameters */
@@ -118,7 +118,7 @@ int bitcmp(WORD a, WORD b);
 
 /* globals */
 
-static int ep=-1; ///< \brief EPOS file descriptor
+static int ep = -1; ///< \brief EPOS file descriptor
 char gMarker = 0; ///< \brief global; for internal handling
 
 

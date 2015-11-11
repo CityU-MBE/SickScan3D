@@ -221,6 +221,7 @@ class MotorControl
 	    readActualPosition(&pos);
 
 	    angle = (double)(pos-origin_pos)*angle_ratio;
+	    printf("Read pos is: %ld angle is :%lf\n", pos,angle);
 
 	    if(pos==(origin_pos+RotationPos)){
 			KalmanFilterStop = true;

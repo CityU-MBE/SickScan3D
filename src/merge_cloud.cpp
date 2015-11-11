@@ -43,8 +43,10 @@ potentially from different sensors
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <tf/message_filter.h>
 #include <tf/transform_listener.h>
+#include <sensor_msgs/point_cloud_conversion.h>
 
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
@@ -56,47 +58,26 @@ potentially from different sensors
 
 class MergeClouds
 {
-    public:
-
-	MergeClouds(void) :
-	    sub1_(nh_, "cloud", 10)
-	    //sub2_(nh_, "cloud", 10)
-	{
-	    cloudOut_ = nh_.advertise<sensor_msgs::PointCloud>("cloud_out", 10);
-	    nh_.param("output_frame", output_frame_, std::string("world"));
-	    nh_.param("max_frequency", max_freq_, 0.0);
-	    newCloud1_ = false;
-        updateframe = false;
-        clockwise = true;
-
-	    if (output_frame_.empty())
-		ROS_ERROR("No output frame specified for merging pointclouds");
-
-	    // make sure we don't publish too fast
-	    if (max_freq_ > 1000.0 || max_freq_ < 0.0)
-		max_freq_ = 0.0;
-
-	    if (max_freq_ > 0.0)
-	    {
-		timer_ = nh_.createTimer(ros::Duration(1.0/max_freq_), boost::bind(&MergeClouds::onTimer, this, _1));
-		haveTimer_ = true;
-	    }
-	    else
-		haveTimer_ = false;
-        motorangle_sub = nh_.subscribe("motorangle", 10, &MergeClouds::motorangleCallback, this);
-	    tf_filter1_.reset(new tf::MessageFilter<sensor_msgs::PointCloud>(sub1_, tf_, output_frame_, 10));
-	    //tf_filter2_.reset(new tf::MessageFilter<sensor_msgs::PointCloud>(sub2_, tf_, output_frame_, 10));
-
-	    tf_filter1_->registerCallback(boost::bind(&MergeClouds::receiveCloud1, this, _1));
-	    //tf_filter2_->registerCallback(boost::bind(&MergeClouds::receiveCloud2, this, _1));
-	}
-
-	~MergeClouds(void)
-	{
-
-	} 
-
-    private:
+    private: 
+	ros::NodeHandle       nh_;
+	tf::TransformListener tf_;
+	ros::Timer            timer_;
+	bool                  haveTimer_;
+	ros::Publisher        cloudOut_;
+    ros::Publisher        cloudOut2_;
+	double                max_freq_;
+	std::string           output_frame_;
+	message_filters::Subscriber<sensor_msgs::PointCloud> sub1_;
+	boost::shared_ptr<tf::MessageFilter<sensor_msgs::PointCloud> > tf_filter1_;
+	bool                  newCloud1_;
+	sensor_msgs::PointCloud cloud1_;
+	sensor_msgs::PointCloud cloud2_;
+    sensor_msgs::PointCloud2 pc2;
+	boost::mutex            lock1_;
+	boost::mutex            lock2_;
+    ros::Subscriber motorangle_sub;
+    bool updateframe;
+    bool clockwise;
 
 	void onTimer(const ros::TimerEvent &e)
 	{
@@ -110,7 +91,6 @@ class MergeClouds
 	    lock2_.lock();
 
 	    newCloud1_ = false;
-	    //newCloud2_ = false;
 
 	    sensor_msgs::PointCloud out;
 	    if (cloud1_.header.stamp > cloud2_.header.stamp)
@@ -127,8 +107,8 @@ class MergeClouds
 	    // copy common channels
 	    for (unsigned int i = 0 ; i < cloud1_.channels.size() ; ++i)
 		for (unsigned int j = 0 ; j < cloud2_.channels.size() ; ++j)
-		    if (cloud1_.channels[i].name == cloud2_.channels[j].name)
-		    {
+	    if (cloud1_.channels[i].name == cloud2_.channels[j].name)
+	    {
 			ROS_ASSERT(cloud1_.channels[i].values.size() == cloud1_.points.size());
 			ROS_ASSERT(cloud2_.channels[j].values.size() == cloud2_.points.size());
 			unsigned int oc = out.channels.size();
@@ -138,15 +118,19 @@ class MergeClouds
 			std::copy(cloud1_.channels[i].values.begin(), cloud1_.channels[i].values.end(), out.channels[oc].values.begin());
 			std::copy(cloud2_.channels[j].values.begin(), cloud2_.channels[j].values.end(), out.channels[oc].values.begin() + cloud1_.channels[i].values.size());
 			break;
-		    }
+	    }
 
 	    lock1_.unlock();
 	    lock2_.unlock();
 	    cloud2_ = out;
+        //convert pointcloud to pointcloud2
+        sensor_msgs::convertPointCloudToPointCloud2(out,pc2);
         if (updateframe)
         {
             updateframe = false;
             cloudOut_.publish(out);
+            //we need pointcloud2 format  
+            cloudOut2_.publish(pc2);
             cloud2_ = cloud1_;
         }
 	}
@@ -185,7 +169,8 @@ class MergeClouds
 		publishClouds();
 	}
 
-/*	void receiveCloud2(const sensor_msgs::PointCloudConstPtr &cloud)
+    /*
+     void receiveCloud2(const sensor_msgs::PointCloudConstPtr &cloud)
 	{
 	    lock2_.lock();
 	    processCloud(cloud, cloud2_);
@@ -194,7 +179,7 @@ class MergeClouds
 	    if (!haveTimer_ && newCloud1_)
 		publishClouds();
 	}
-*/
+    */
 	void processCloud(const sensor_msgs::PointCloudConstPtr &cloud, sensor_msgs::PointCloud &cloudOut)
 	{
 	    if (output_frame_ != cloud->header.frame_id)
@@ -203,30 +188,45 @@ class MergeClouds
 		cloudOut = *cloud;
 	}
 
-	ros::NodeHandle       nh_;
-	tf::TransformListener tf_;
+    public:
 
-	ros::Timer            timer_;
-	bool                  haveTimer_;
+	MergeClouds(void) :sub1_(nh_, "cloud", 10)
+	{
+	    cloudOut_ = nh_.advertise<sensor_msgs::PointCloud>("cloud_out", 10);
+        cloudOut2_= nh_.advertise<sensor_msgs::PointCloud2>("cloud2_out",10);
+        nh_.param("output_frame", output_frame_, std::string("world"));
+	    nh_.param("max_frequency", max_freq_, 0.0);
+	    newCloud1_ = false;
+        updateframe = false;
+        clockwise = true;
 
-	ros::Publisher        cloudOut_;
-	double                max_freq_;
-	std::string           output_frame_;
+	    if (output_frame_.empty())
+		ROS_ERROR("No output frame specified for merging pointclouds");
 
-	message_filters::Subscriber<sensor_msgs::PointCloud> sub1_;
-	//message_filters::Subscriber<sensor_msgs::PointCloud> sub2_;
-	boost::shared_ptr<tf::MessageFilter<sensor_msgs::PointCloud> > tf_filter1_;
-	//boost::shared_ptr<tf::MessageFilter<sensor_msgs::PointCloud> > tf_filter2_;
+	    // make sure we don't publish too fast
+	    if (max_freq_ > 1000.0 || max_freq_ < 0.0)
+		max_freq_ = 0.0;
 
-	bool                  newCloud1_;
-	//bool                newCloud2_;
-	sensor_msgs::PointCloud cloud1_;
-	sensor_msgs::PointCloud cloud2_;
-	boost::mutex            lock1_;
-	boost::mutex            lock2_;
-    ros::Subscriber motorangle_sub;
-    bool updateframe;
-    bool clockwise;
+	    if (max_freq_ > 0.0)
+	    {
+		timer_ = nh_.createTimer(ros::Duration(1.0/max_freq_), boost::bind(&MergeClouds::onTimer, this, _1));
+		haveTimer_ = true;
+	    }
+	    else
+		haveTimer_ = false;
+        motorangle_sub = nh_.subscribe("motorangle", 10, &MergeClouds::motorangleCallback, this);
+	    tf_filter1_.reset(new tf::MessageFilter<sensor_msgs::PointCloud>(sub1_, tf_, output_frame_, 10));
+	    //tf_filter2_.reset(new tf::MessageFilter<sensor_msgs::PointCloud>(sub2_, tf_, output_frame_, 10));
+
+	    tf_filter1_->registerCallback(boost::bind(&MergeClouds::receiveCloud1, this, _1));
+	    //tf_filter2_->registerCallback(boost::bind(&MergeClouds::receiveCloud2, this, _1));
+	}
+
+	~MergeClouds(void)
+	{
+
+	} 
+
 
 };
 
