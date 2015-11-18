@@ -58,6 +58,7 @@ class MotorControl
 	tf::Transform transform;
 	tf::Quaternion q;
 	ros::Publisher motorangle_pub;
+	ros::Publisher encoder_pub;
 	ros::Timer timer_read;
 	ros::Timer timer_pub;
 
@@ -187,6 +188,7 @@ class MotorControl
 	    angle = 0;
 	    angle_predict = 0;
 	    motorangle_pub = n.advertise<std_msgs::Float64>("motorangle", 10);
+	    encoder_pub=n.advertise<std_msgs::Float64>("encoder_angle",100);
 
 	    EPOS_initialize(port.c_str(),pos, origin_pos, (long)RotationPos);
 
@@ -215,13 +217,13 @@ class MotorControl
 
 	void read_timerCallback(const ros::TimerEvent &e)
 	{
-	    // std_msgs::String msg_display;
-	    // std::stringstream ss_display;
+	    std_msgs::Float64 msg;
 
 	    readActualPosition(&pos);
 
 	    angle = (double)(pos-origin_pos)*angle_ratio;
-	    printf("Read pos is: %ld angle is :%lf\n", pos,angle);
+	    msg.data=angle;
+	    encoder_pub.publish(msg);
 
 	    if(pos==(origin_pos+RotationPos)){
 			KalmanFilterStop = true;
@@ -247,10 +249,7 @@ class MotorControl
 	            u = acceleration;
 			    KalmanFilterStop = false;
 			}
-	    }
-	    // ss_display << "EPOS actual angle: " << angle << ", predicted angle: " << angle_predict <<", error: " << angle_predict - angle;
-	    // msg_display.data = ss_display.str(); 
-	    // ROS_INFO("%s", msg_display.data.c_str());      
+	    }     
 	}
 
 	void pub_timerCallback(const ros::TimerEvent &e)

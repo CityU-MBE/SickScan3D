@@ -11,9 +11,9 @@ find_package(
   roscpp
   roscpp_serialization
   rospy
+  message_generation
   std_msgs
   sensor_msgs
-  message_generation
   tf
   laser_geometry
   laser_assembler
