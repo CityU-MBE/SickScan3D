@@ -32,6 +32,7 @@
 // %Tag(MSG_HEADER)%
 #include "std_msgs/String.h"
 #include "std_msgs/Float64.h"
+#include "std_msgs/Float64MultiArray.h"
 // %EndTag(MSG_HEADER)%
 
 #include <sstream>
@@ -84,6 +85,7 @@ class MotorControl
 	//define acceleration magnitude
 	double u;//!Extended Kalman Filter input, acceleration
     double KalmanFilterStep;//!Extended Kalman Filter Step
+    double readFrequency;
 	//process noise: the variability in how fast the Quail is speeding up (stdv of acceleration: meters/sec^2)
 	double MotionModelNoiseMag;
 	//measurement noise: How mask-blinded is the Ninja (stdv of location, in meters)
@@ -114,7 +116,7 @@ class MotorControl
 	    Emotion = pow(MotionModelNoiseMag, 2)*Emotion;
 
         //update u for extended Kalman Filter
-        if (abs(Qestimate[1]) >= abs(velocity))
+        if (fabs(Qestimate[1]) >= fabs(velocity))
         {
             u = 0.0;
             Qestimate[1] = velocity;
@@ -160,6 +162,8 @@ class MotorControl
         ros::param::param("~kalmanfilterstep", KalmanFilterStep, 0.0001);
         ros::param::param("~motionmodelnoise", MotionModelNoiseMag, 0.05);
         ros::param::param("~measurenoise", MeasureNoiseMag, 2.0);
+        ros::param::param("~readfrequency",readFrequency,1000.0);
+
         KalmanFilterStop = true;
 	    
         //Kalman Filter parameters initialization
@@ -187,8 +191,9 @@ class MotorControl
 	    angle_ratio = M_PI/(double)4800;
 	    angle = 0;
 	    angle_predict = 0;
+
 	    motorangle_pub = n.advertise<std_msgs::Float64>("motorangle", 10);
-	    encoder_pub=n.advertise<std_msgs::Float64>("encoder_angle",100);
+	    encoder_pub=n.advertise<std_msgs::Float64MultiArray>("angleArray",100);
 
 	    EPOS_initialize(port.c_str(),pos, origin_pos, (long)RotationPos);
 
@@ -203,7 +208,7 @@ class MotorControl
 
         //timer initialization
 	    timer_pub = n.createTimer(ros::Duration(KalmanFilterStep), boost::bind(&MotorControl::pub_timerCallback, this, _1));
-	    timer_read = n.createTimer(ros::Duration(0.05), boost::bind(&MotorControl::read_timerCallback, this, _1));
+	    timer_read = n.createTimer(ros::Duration(1.0/readFrequency), boost::bind(&MotorControl::read_timerCallback, this, _1));
 
 	}
 
@@ -217,12 +222,15 @@ class MotorControl
 
 	void read_timerCallback(const ros::TimerEvent &e)
 	{
-	    std_msgs::Float64 msg;
-
+	    std_msgs::Float64MultiArray  msg;
+    
 	    readActualPosition(&pos);
-
+        
+        msg.data.resize(2);
+        
 	    angle = (double)(pos-origin_pos)*angle_ratio;
-	    msg.data=angle;
+	    msg.data[0]=angle;
+        msg.data[1]=(angle-angle_predict)*100;
 	    encoder_pub.publish(msg);
 
 	    if(pos==(origin_pos+RotationPos)){
@@ -411,7 +419,8 @@ void EPOS_initialize(const char* usb,long &pos, long &origin_pos, long destinati
  * Node:motorcontrol
  * control the motor and output angle
  */
-int main(int argc, char **argv){
+int main(int argc, char **argv)
+{
 
     ros::init(argc, argv, "motorcontrol");
 
