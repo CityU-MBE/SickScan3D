@@ -29,6 +29,8 @@
 
   <node pkg="sickscan3d" type="merge_cloud" output="screen"  name="merge_cloud" />
 
+  <node pkg="nick"  type="nick_udp" output="screen" name="nick_udp"/>
+
 </launch>
 
 
