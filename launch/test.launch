@@ -15,9 +15,9 @@
     <param name="profdeceleration" value="300" />
     <param name="rotationpos" value="2400" />
     <param name="kalmanfilterstep" value="0.0001" />
-    <param name="motionmodelnoise" value="0.05" />
-    <param name="measurenoise" value="2.0" />
-    <param name="readfrequency" value="1000"/>
+    <param name="motionmodelnoise" value="0.8" />
+    <param name="measurenoise" value="0.1" />
+    <param name="readfrequency" value="400"/>
   </node>
 
   <node pkg="sickscan3d" type="scan3d" output="screen"  name="scan3d">
@@ -29,8 +29,6 @@
   </node>
 
   <node pkg="sickscan3d" type="merge_cloud" output="screen"  name="merge_cloud" />
-
-  <node pkg="nick"  type="nick_udp" output="screen" name="nick_udp"/>
 
 </launch>
 
